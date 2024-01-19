@@ -1,0 +1,166 @@
+---
+title: "Tayko EDA"
+author: "Zara Sarkar"
+date: "`r Sys.Date()`"
+output: word_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# The Research Question
+
+We want to figure out whether we can create a model to aacurately predict whether a customer will purchase an item or not. 
+
+We will begin our research by performing exploratory data analysis (EDA) to see if any of the variables (or columns in the dataset) could potentially be used in the model. 
+
+
+## Loading the Data
+
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(GGally)
+setwd("C:/Users/ZaraS/OneDrive - Bentley University/Senior Year/Spring 2023/MA 347 - Data Mining/MA347 Project")
+
+tayko <- read.csv("Tayko.csv", header = T)
+
+
+
+cols <- c("US" , "source_a" ,"source_c", "source_b", "source_d", "source_e","source_m","source_o",
+          "source_h", "source_r", "source_s", "source_t", "source_u", "source_p", "source_x","source_w",
+          "Web.order","Gender.male", "Address_is_res", "Purchase"  )
+tayko[cols] <- lapply(tayko[cols], factor)
+
+```
+
+
+# EDA
+
+
+## Creating the Scatterplot Matrices
+
+In order to figure out which variables could potentially be used in the model,  we are going to create scatterplot matrices to compare the variables to Purchase. This way it is an easy and efficient way to examine all of the variables at the same time. 
+
+The important charts will be the ones on the bottom row and last column as they are the ones being compared to Purchase
+
+
+```{r}
+plot1 <- ggpairs(tayko, columns = c("US", "source_a", "source_c", "Purchase"), mapping=ggplot2::aes(color = Purchase), lower=list(combo=wrap("facethist",binwidth=1)), 
+columnLabels = c( "US", "source_a", "source_c", "Purchase"))
+
+plot1
+
+
+```
+
+Based on the charts from the bottom row, it seems that only one variable might be significant: `source_a`. This is because many of the other charts show the same pattern regardless of whether a customer purchases or did not purchase. For example, if we look at US vs Purchase. We see that there is no change in the shape of the bar chart from not purchased to purchased. However, with `source_a` we see that the pattern changes. 
+
+
+```{r}
+plot2 <- ggpairs(tayko, columns = c("source_b", "source_d", "source_e", "source_m", "Purchase"), mapping=ggplot2::aes(color = Purchase), lower=list(combo=wrap("facethist",binwidth=1)), 
+columnLabels = c("source_b", "source_d", "source_e", "source_m", "Purchase"))
+
+plot2
+
+```
+
+Based on the charts from the bottom row, we did not see any potential variables of interest. This is because there is no change in the bar plot patterns from purchase to non-purchase. 
+
+```{r}
+plot3 <- ggpairs(tayko, columns = c("source_o", "source_h", "source_r", "source_s", "Purchase"), mapping=ggplot2::aes(color = Purchase), lower=list(combo=wrap("facethist",binwidth=1)), 
+columnLabels = c("source_o", "source_h", "source_r", "source_s", "Purchase"))
+
+plot3
+
+```
+
+
+Again, we did not see any potential variables of interest. This is because there is no change in the bar plot patterns from purchase to non-purchase. 
+
+
+```{r}
+
+names(tayko)
+
+plot3 <- ggpairs(tayko, columns = c("source_w", "Freq", "last_update_days_ago", "X1st_update_days_ago", "Purchase"), mapping=ggplot2::aes(color = Purchase), lower=list(combo=wrap("facethist",binwidth=1)), 
+columnLabels = c("source_w", "Freq", "last_update_days_ago", "X1st_update_days_ago", "Purchase"))
+
+plot3
+
+```
+
+From the bottom row, we see that Frequency might have some impact on the model. From the charts, we can see that Frequency has a high rate then tapers off. However, when there is a purchase, we see that there are still higher rates of Frequency in comparison to no purchases. 
+
+```{r}
+
+names(tayko)
+
+plot4 <- ggpairs(tayko, columns = c("Web.order", "Gender.male", "Address_is_res", "Spending", "Purchase"), mapping=ggplot2::aes(color = Purchase), lower=list(combo=wrap("facethist",binwidth=1)), 
+columnLabels = c("Web.order", "Gender.male", "Address_is_res", "Spending", "Purchase"))
+
+plot4
+
+```
+From the last column, we can see the boxplot displaying the spending and the purchases. Based on boxplot, we see that people who made purchases obviously spend more money. Therefore, Spending should be useful to the model. 
+
+In short, these are the four variables that could potentially be used in the model: `Freq`, `Spending`, `Web.order`, `source_a`
+
+
+## A Closer Look at the Important Variables
+
+To illustrate the important variables and how they relate to Purchase, we have added larger versions of the graphs so as to highlight their importance to the model. 
+
+
+### `Freq` vs `Purchase`
+
+```{r}
+
+ggplot(data = tayko, mapping = aes(x=Freq,  fill = Purchase  )) + 
+  geom_bar(position = 'dodge')
+
+```
+
+### `Spending` vs `Purchase`
+
+```{r}
+
+ggplot(data = tayko, mapping = aes(x=Spending,  fill = Purchase  )) + geom_boxplot()
+
+```
+
+### `Web.order` vs `Purchase`
+
+```{r}
+
+head(tayko$Gender.male)
+ggplot(data = tayko, mapping = aes(x=as.factor(Web.order),  fill = Purchase  )) + 
+  geom_bar(position = 'dodge')
+
+```
+
+### `source_a` vs `Purchase`
+
+```{r}
+
+head(tayko$Gender.male)
+ggplot(data = tayko, mapping = aes(x=source_a,  fill = Purchase  )) + 
+  geom_bar(position = 'dodge')
+
+
+
+
+```
+
+`Freq`, `Spending`, `Web.order`, `source_a`
+
+
+
+
+
+
+

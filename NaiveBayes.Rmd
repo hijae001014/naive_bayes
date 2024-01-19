@@ -1,0 +1,70 @@
+---
+title: "Final Project_NaiveBayes"
+author: "Jie Xu"
+date: "2023-05-01"
+output: word_document
+---
+Research problem:
+What is the probability of purchase if a customer who has `at least one order via web`, and from source a.
+
+# data preparation
+```{r}
+tayko.df <- read.csv("Tayko.csv")
+#tayko.df
+naive.df <- tayko.df[,c(3,21:24 )]
+#naive.df
+```
+
+# Partition the data into training (60%) and validation (40%) sets.
+```{r}
+set.seed(1)
+train.index <- sample(c(1:dim(naive.df)[1]), dim(naive.df)[1]*0.6)  
+train.df <- naive.df[train.index, ]
+valid.df <- naive.df[-train.index, ]
+```
+
+# create a table to show the groups
+```{r}
+attach(train.df)
+ftable(Purchase,Web.order,source_a)
+```
+
+# create a Naive Bayes model using function naiveBayes, get the result of predicted probability, which indicates the answer for research problem that the probability of purchase if a female customer from the US place at least one order via web, her address is residence address, and she did not made purchase in test mailing is 0.6597664.
+```{r}
+library(e1071)
+naive.model <- naiveBayes(Purchase ~ Web.order +source_a, data = naive.df)
+pred.prob <- predict(naive.model, newdata = data.frame(Web.order=1,source_a=1), type = "raw")
+pred.prob
+```
+
+
+# Evaluate the Naive Bayes model using predict function and confusion matrix. They shows the predicted accuracy of the Naive Bayes model on the training set is 0.5708.
+```{r}
+library(caret)
+nb.predict.class <- predict(naive.model, newdata=train.df, type = 'class')
+confusionMatrix(nb.predict.class, factor(train.df$Purchase))
+```
+
+# Evaluate the Naive Bayes model using predict function and confusion matrix. They shows the predicted accuracy of the Naive Bayes model on the training set is 0.57
+```{r}
+nb.predict.class <- predict(naive.model, newdata=valid.df, type = 'class')
+confusionMatrix(nb.predict.class, factor(valid.df$Purchase))
+```
+
+# Evaluate the Naive Bayes model using predict function and lift curve. The result shows that the Naive Bayes model have better performance than the baseline model, and on the top 9.8% of the data, the Naive Bayes model can predict as 1.82 times events as the naive model.
+```{r}
+library(gains)
+pred.prob <- predict(naive.model, newdata = valid.df, type = "raw")
+gain <- gains(ifelse(valid.df$Purchase==1,1,0), pred.prob[,2], groups=4)
+
+plot(c(0,gain$cume.pct.of.total*sum(valid.df$Purchase==1))~c(0,gain$cume.obs), 
+     xlab="# cases", ylab="Cumulative", main="", type="l")
+
+lines(c(0,sum(valid.df$Purchase==1))~c(0, dim(valid.df)[1]), lty=2)
+gain
+```
+
+
+
+
+

@@ -1,0 +1,95 @@
+---
+title: "FinalProj_LogitReg"
+author: "Joel DeLeon"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r}
+library(data.table)
+Tayko <- read.csv("Tayko.csv")
+Tayko <- Tayko[, c(3, 18, 21, 24)]
+Tayko$source_a <- factor(Tayko$source_a)
+Tayko$Web.order <- factor(Tayko$Web.order)
+Tayko$Purchase <- factor(Tayko$Purchase)
+```
+
+Partitioning + Logistic Regression
+
+```{r}
+set.seed(745)
+train.index <- sample(c(1:dim(Tayko)[1]), dim(Tayko)[1]*0.6)
+train.df <- Tayko[train.index, ]
+valid.df <- Tayko[-train.index, ]
+logit.reg <- glm(Purchase ~ ., data = train.df, family = "binomial") 
+summary(logit.reg)
+```
+
+-   With all the coefficients being positive, it implies that someone on source a is more likely to purchase, as well as the frequency of how many purchases they made on a catalog the past year and if they placed an order on the web.
+
+Confusion Matrices
+
+```{r}
+library(caret)
+logit.reg.pred <- predict(logit.reg, valid.df[, -4], type = "response")
+logit.reg.pred.train <- predict(logit.reg, train.df[, -4], type = "response")
+trpred_class<-ifelse(logit.reg.pred.train >0.5,1,0)
+
+Sensitivity <- 501/699
+Specificity <- 413/501
+classrate <- 914/1200
+Misclassrate <- 1 - classrate
+
+Sensitivity
+Specificity
+classrate
+Misclassrate
+
+table(trpred_class,train.df$Purchase)
+trpred_class<-ifelse(logit.reg.pred >0.5,1,0)
+table(trpred_class, valid.df$Purchase)
+
+Sensitivity <- 330/465
+Specificity <- 254/335
+classrate <- 584/800
+Misclassrate <- 1 - classrate
+
+Sensitivity
+Specificity
+classrate
+Misclassrate
+```
+
+-   Looking at the classification rates, the training data performed better at predicting whether they purchased or not compared to the validation data, which is reasonable as the model was built using the training data. Interestingly enough the training data was only about 3% more accurate.
+
+Generating ROC Curve
+
+```{r}
+library(pROC)
+r<-roc(train.df$Purchase,logit.reg.pred.train)
+plot.roc(r)
+auc.tr<-auc(r)
+
+r<-roc(valid.df$Purchase,logit.reg.pred)
+plot.roc(r)
+auc.vl<-auc(r)
+```
+
+-   Looking at the ROC curves, both the curves for the training and validation are raised towards the top left, meaning they are better able to classify the subjects than the baseline model of a coin flip. Naturally, the training data performs slightly better than the validation data for the same reason as before, being that the model was made using the training data.
+
+Generating Lift Curve
+
+```{r}
+library(gains)
+Purchase <- valid.df$Purchase
+y<- ifelse(Purchase==1,1,0)
+
+gain <- gains(y, logit.reg.pred, groups=5)
+plot(c(0,gain$cume.pct.of.total*sum(y))~c(0,gain$cume.obs), 
+     xlab="# cases", ylab="Cumulative", main="", type="l")
+lines(c(0,sum(y))~c(0, dim(Tayko)[1]), lty=2)
+
+gain
+```
+
+-   Looking at the lift curve, the top 40.9% of our data can predict 1.71 times the number of events on the validation data compared to the baseline model, once again being esssentially flipping a coin to determine if a point is a purchaser or not.
